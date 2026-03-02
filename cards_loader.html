@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Карточки — печать</title>
+  <style>
+    @page { size: A4; margin: 10mm; }
+    @media print {
+      body { background: white; }
+      .toolbar { display: none !important; }
+      .sheet { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; }
+    }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background:#f3f5f7;
+      color:#111;
+    }
+    .toolbar{
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: white;
+      border-bottom: 1px solid #e6e8eb;
+      padding: 10px 12px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+    .muted{ color:#4b5563; font-size: 13px; }
+    button{
+      border:1px solid #d7dbe0;
+      background:#fff;
+      padding:8px 10px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    button:hover{ background:#f7f8fa; }
+
+    .sheet{
+      width: 210mm;
+      min-height: 297mm;
+      margin: 14px auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.12);
+      padding: 8mm;
+      box-sizing: border-box;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8mm;
+    }
+    .card{
+  border: 1px solid #e6e8eb;
+  border-radius: 14px;
+  overflow: hidden;
+  display:flex;
+  flex-direction: column;
+
+  /* ВАЖНО: карточка растёт, ничего не режем */
+  height: auto;
+  min-height: 68mm;
+
+  page-break-inside: avoid;
+}
+    .head{
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      padding: 8px 10px;
+      font-weight: 800;
+      letter-spacing: .2px;
+      color: white;
+      background: linear-gradient(135deg, #2a6df4, #7b3ff2);
+    }
+    .tag{ font-weight: 800; font-size: 12px; opacity:.98; }
+    .num{
+      font-weight: 900;
+      font-size: 12px;
+      opacity:.95;
+      background: rgba(255,255,255,.18);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .body{
+      flex:1;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      position: relative;
+      background: #ffffff;
+    }
+    .body::before{
+      content:"";
+      position:absolute;
+      left:50%;
+      top:10px;
+      bottom:10px;
+      width:0;
+      border-left: 2px dashed #d7dbe0;
+      pointer-events:none;
+    }
+    .side{
+  padding: 10px 12px;
+  box-sizing:border-box;
+
+  
+  overflow: visible;
+  min-width: 0;
+}
+.side.a .text{
+  font-size: 11.7px;
+  line-height: 1.22;
+}
+    .label{
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color:#6b7280;
+      margin-bottom: 6px;
+    }
+    .text{
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;   
+  word-break: break-word;   
+  hyphens: auto;
+}
+    .q{ background: linear-gradient(180deg, rgba(42,109,244,.08), transparent 65%); }
+    .a{ background: linear-gradient(180deg, rgba(123,63,242,.08), transparent 65%); }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <input id="file" type="file" accept=".txt" />
+    <button id="printBtn" disabled>Печать (Ctrl+P)</button>
+    <span class="muted">Выбери свой карточки.txt → появятся карточки → включи “Печать фона”.</span>
+  </div>
+
+  <div class="sheet">
+    <div id="grid" class="grid"></div>
+  </div>
+
+<script>
+  const tagGradients = {
+    "Java Core":"linear-gradient(135deg,#0ea5e9,#2563eb)",
+    "JVM/Threads":"linear-gradient(135deg,#111827,#334155)",
+    "Networks/HTTP":"linear-gradient(135deg,#06b6d4,#3b82f6)",
+    "Spring":"linear-gradient(135deg,#22c55e,#16a34a)",
+    "SQL (PostgreSQL)":"linear-gradient(135deg,#f97316,#ef4444)",
+    "API/REST":"linear-gradient(135deg,#a855f7,#ec4899)",
+    "Git":"linear-gradient(135deg,#111827,#6b7280)",
+    "Maven":"linear-gradient(135deg,#7c3aed,#2563eb)",
+    "Docker":"linear-gradient(135deg,#06b6d4,#2563eb)",
+    "Microservices":"linear-gradient(135deg,#f59e0b,#d97706)",
+    "Kubernetes":"linear-gradient(135deg,#6366f1,#2563eb)",
+    "Algorithms":"linear-gradient(135deg,#10b981,#059669)",
+    "Other":"linear-gradient(135deg,#2a6df4,#7b3ff2)"
+  };
+
+  function tagFor(n){
+    if (n>=1 && n<=30) return "Java Core";
+    if (n>=31 && n<=55) return "JVM/Threads";
+    if (n>=56 && n<=65) return "Networks/HTTP";
+    if (n>=66 && n<=105) return "Spring";
+    if (n>=106 && n<=150) return "SQL (PostgreSQL)";
+    if (n>=151 && n<=170) return "API/REST";
+    if (n>=171 && n<=195) return "Git";
+    if (n>=196 && n<=210) return "Maven";
+    if (n>=211 && n<=235) return "Docker";
+    if (n>=236 && n<=260) return "Microservices";
+    if (n>=261 && n<=285) return "Kubernetes";
+    if (n>=286 && n<=310) return "Algorithms";
+    return "Other";
+  }
+
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;");
+  }
+
+  
+  function parseCards(text){
+    
+    const lines = text.split(/\r?\n/);
+    const cleaned = lines.filter(l => !/^\s*[А-Яа-яA-Za-z].*\(\d+–\d+\)\s*$/.test(l)).join("\n");
+
+    const re = /^\s*(\d+)\.\s*(.+?)\n([\s\S]*?)(?=^\s*\d+\.\s+|\Z)/gm;
+    const res = [];
+    let m;
+    while ((m = re.exec(cleaned)) !== null){
+      const n = parseInt(m[1],10);
+      const q = m[2].trim();
+      const body = m[3].trim();
+
+      const a = extract(body, "Ответ");
+      const ex = extract(body, "Пример");
+      const mis = extract(body, "Ошибка");
+
+      let back = (a || body).trim();
+      if (ex) back += "\n\nПример: " + ex.trim();
+      if (mis) back += "\nОшибка: " + mis.trim();
+
+      res.push({n, tag: tagFor(n), q, a: back});
+    }
+    res.sort((x,y)=>x.n-y.n);
+    return res;
+  }
+
+  function extract(body, label){
+    const r = new RegExp("^\\s*" + label + "\\s*:\\s*", "m");
+    const idx = body.search(r);
+    if (idx === -1) return "";
+    const start = idx + body.match(r)[0].length;
+
+    
+    const rest = body.slice(start);
+    const next = rest.search(/^\s*(Ответ|Пример|Ошибка)\s*:\s*/m);
+    return (next === -1 ? rest : rest.slice(0, next)).trim();
+  }
+
+  function render(cards){
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
+    cards.forEach(c=>{
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const head = document.createElement("div");
+      head.className = "head";
+      head.style.background = tagGradients[c.tag] || tagGradients.Other;
+      head.innerHTML = `<div class="tag">${escapeHtml(c.tag)}</div><div class="num">#${c.n}</div>`;
+
+      const body = document.createElement("div");
+      body.className = "body";
+      body.innerHTML = `
+        <div class="side q">
+          <div class="label">Вопрос</div>
+          <div class="text">${escapeHtml(c.q)}</div>
+        </div>
+        <div class="side a">
+          <div class="label">Ответ</div>
+          <div class="text">${escapeHtml(c.a)}</div>
+        </div>
+      `;
+
+      card.appendChild(head);
+      card.appendChild(body);
+      grid.appendChild(card);
+    });
+  }
+
+  const fileInput = document.getElementById("file");
+  const printBtn = document.getElementById("printBtn");
+
+  fileInput.addEventListener("change", async (e)=>{
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const text = await f.text();
+    const cards = parseCards(text);
+    render(cards);
+    printBtn.disabled = cards.length === 0;
+    printBtn.onclick = ()=>window.print();
+  });
+</script>
+</body>
+</html>
